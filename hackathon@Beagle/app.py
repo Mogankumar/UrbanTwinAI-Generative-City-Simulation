@@ -1,7 +1,7 @@
 import streamlit as st
 import folium
 from streamlit_folium import st_folium
-
+from models import uhi_raw, traffic_delay_raw, pm25_raw
 from geo_utils import make_bbox, fetch_osm, grid_bbox, features
 from models import apply_scenario, uhi_delta, traffic_delay_pct, pm25_delta
 from viz import add_heat_layer
@@ -26,14 +26,19 @@ if submit:
     bbox = make_bbox(lat, lon, km)
     bld, roads, green, poly_m = fetch_osm(bbox)
 
+    print(len(bld), len(roads), len(green))
+    print(bld.head(3))
+    print(roads.head(3))
+    print(green.head(3))
+
     if len(bld) == 0 and len(green) == 0 and len(roads) == 0:
         st.warning("No OSM features in this tile. Try a different location/size.")
         st.stop()
 
     grid = grid_bbox(poly_m, cell=50)
     base = features(grid, bld, roads, green)
+    base[["building_cov", "green_cov", "road_den", "impervious"]].describe()
 
-    # NEW: persist results instead of rendering immediately
     st.session_state["sim"] = {
         "lat": lat,
         "lon": lon,
@@ -48,15 +53,23 @@ if "sim" in st.session_state:
     lon  = sim["lon"]
 
     scenario = apply_scenario(base, add_b, add_g)
+
+    print(scenario["building_cov"].mean(), base["building_cov"].mean())
+    print(scenario["green_cov"].mean(), base["green_cov"].mean())
+
     uhi = uhi_delta(scenario)
     delay = traffic_delay_pct(scenario)
     pm = pm25_delta(scenario)
 
     # KPIs
+    uhi_kpi   = uhi_raw(scenario).mean()   - uhi_raw(base).mean()
+    delay_kpi = traffic_delay_raw(scenario).mean() - traffic_delay_raw(base).mean()
+    pm_kpi    = pm25_raw(scenario).mean()  - pm25_raw(base).mean()
+
     c1, c2, c3 = st.columns(3)
-    c1.metric("Δ UHI (°C, mean)", f"{uhi.mean():+.2f}")
-    c2.metric("Δ Traffic delay (%)", f"{delay.mean():+.1f}%")
-    c3.metric("Δ PM2.5 (µg/m³)", f"{pm.mean():+.2f}")
+    c1.metric("Δ UHI (°C, mean)", f"{uhi_kpi:+.2f}")
+    c2.metric("Δ Traffic delay (%)", f"{(delay_kpi*100):+.1f}%")  # convert to %
+    c3.metric("Δ PM2.5 (µg/m³)", f"{pm_kpi:+.2f}")
 
     # Map
     m = folium.Map(
@@ -64,7 +77,7 @@ if "sim" in st.session_state:
         zoom_start=16,
         tiles="cartodbpositron",
         width="100%",  # make it full-width
-        height="100%"  # optional, but helps scaling
+        height="100%" 
     )
 
     add_heat_layer(m, scenario[["geometry"]], uhi, "UHI Δ (°C)")
