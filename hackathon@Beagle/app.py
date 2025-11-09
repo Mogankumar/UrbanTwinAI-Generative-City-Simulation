@@ -195,7 +195,7 @@ if "sim" in st.session_state:
             uhi_backend = "Heuristic"
     else:
         uhi_delta_series = pd.Series(uhi_raw(scenario) - uhi_raw(base), index=scenario.index, dtype="float64")
-        uhi_backend = "Heuristic"
+        uhi_backend = "STGNN"
 
     print("mean_building_cov base/scen:", base["building_cov"].mean(), scenario["building_cov"].mean())
     print("mean_green_cov base/scen:",   base["green_cov"].mean(),   scenario["green_cov"].mean())
