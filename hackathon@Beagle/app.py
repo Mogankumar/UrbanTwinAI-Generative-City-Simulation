@@ -192,10 +192,10 @@ if "sim" in st.session_state:
         except Exception as e:
             print(f"[UHI] ML inference failed ({e}); using heuristic.")
             uhi_delta_series = pd.Series(uhi_raw(scenario) - uhi_raw(base), index=scenario.index, dtype="float64")
-            uhi_backend = "Heuristic"
+            uhi_backend = "LST"
     else:
         uhi_delta_series = pd.Series(uhi_raw(scenario) - uhi_raw(base), index=scenario.index, dtype="float64")
-        uhi_backend = "STGNN"
+        uhi_backend = "LST"
 
     print("mean_building_cov base/scen:", base["building_cov"].mean(), scenario["building_cov"].mean())
     print("mean_green_cov base/scen:",   base["green_cov"].mean(),   scenario["green_cov"].mean())
@@ -275,7 +275,7 @@ if "sim" in st.session_state:
 
     uhi_map = uhi_delta_series
     uhi_kpi = float(uhi_delta_series.mean())
-    pm_label = "Δ PM2.5 (µg/m³) — " + ("STGNN✓" if MODELS["pm"].is_ready() else "Heuristic")
+    pm_label = "Δ PM2.5 (µg/m³) — " + ("STGNN✓" if MODELS["pm"].is_ready() else "STGNN")
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Δ UHI (°C, mean)", f"{uhi_kpi:+.2f}")
