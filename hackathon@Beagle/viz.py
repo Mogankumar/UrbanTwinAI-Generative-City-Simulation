@@ -3,32 +3,28 @@ import numpy as np
 import branca.colormap as cm
 
 def add_heat_layer(m, grid_gdf, values, name, vmin=None, vmax=None):
-    # 1) Reproject to WGS84 for Folium
     g = grid_gdf.copy()
     if getattr(g, "crs", None) is not None:
         try:
             g = g.to_crs(epsg=4326)
         except Exception:
-            pass  # if already 4326 or no CRS
+            pass
 
-    # 2) Robust scaling per-layer so you see contrast
     v = np.asarray(values, dtype=float)
-    # For deltas: pick symmetric ranges so color encodes magnitude change
-    if vmin is None: vmin = -0.8 if "UHI" in name else -0.2   # tweak if needed
+    if vmin is None: vmin = -0.8 if "UHI" in name else -0.2  
     if vmax is None: vmax =  0.8 if "UHI" in name else  0.2
     if np.isclose(vmin, vmax):
-        vmax = vmin + 1e-6  # avoid flat scale
+        vmax = vmin + 1e-6  
 
     col = cm.LinearColormap(["blue", "yellow", "red"], vmin=vmin, vmax=vmax)
 
-    # 3) Build GeoJSON and paint
     gj = g.assign(val=v).to_json()
     folium.GeoJson(
         gj,
         name=name,
         style_function=lambda feat: {
             "fillColor": col(feat["properties"]["val"]),
-            "color": "#333333",            # thin outline helps visibility
+            "color": "#333333",           
             "weight": 0.4,
             "fillOpacity": 0.6
         },
@@ -69,27 +65,22 @@ def add_heat_layer(
     line_opacity=0.15,
     line_weight=0.2,
 ):
-    # --- copy + attach values ---
     g = grid_gdf.copy()
     g["__val__"] = np.asarray(values, dtype=float)
 
-    # --- reproject to lat/lon for Folium ---
     try:
         if g.crs is not None:
-            g = g.to_crs(epsg=4326)          # << the missing step
+            g = g.to_crs(epsg=4326)         
     except Exception:
-        # if CRS is missing/unknown, we try anyway; Folium will at least draw
         pass
 
-    # --- bounds ---
     if vmin is None: vmin = float(np.nanmin(g["__val__"]))
     if vmax is None: vmax = float(np.nanmax(g["__val__"]))
     if not np.isfinite(vmin): vmin = 0.0
     if not np.isfinite(vmax) or vmax == vmin: vmax = vmin + 1e-9
 
-    # --- colormap ---
     try:
-        base = getattr(cm.linear, cmap)       # e.g. "YlOrRd_09", "RdBu_11"
+        base = getattr(cm.linear, cmap) 
         colormap = base.scale(vmin, vmax)
     except Exception:
         colormap = cm.LinearColormap(
