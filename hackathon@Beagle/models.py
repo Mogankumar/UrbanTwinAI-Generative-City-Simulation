@@ -1,8 +1,32 @@
-def apply_scenario(df, add_build_pct=0, add_green_pct=0):
+import numpy as np
+
+def apply_scenario(
+    df,
+    add_build_pct=0,
+    add_green_pct=0,
+    green_add_coeff=0.60,     
+    green_mitigate_coeff=0.50  
+):
     d = df.copy()
-    d["building_cov"] = (d["building_cov"] * (1 + add_build_pct/100)).clip(0,1)
-    d["green_cov"] = (d["green_cov"] * (1 + add_green_pct/100)).clip(0,1)
-    d["impervious"] = (d["building_cov"] + d["road_den"]*0.02).clip(0,1)
+
+    b = d["building_cov"] * (1.0 + add_build_pct/100.0)
+
+    free = (1.0 - d["building_cov"] - d["green_cov"]).clip(0.0, 1.0)
+    g = d["green_cov"] + (green_add_coeff * (add_green_pct/100.0)) * free
+
+    total = b + g
+    overflow = (total - 1.0).clip(lower=0.0)
+    denom = total.where(total > 1e-9, 1.0)          
+    b = (b - overflow * (b/denom)).clip(0.0, 1.0)
+    g = (g - overflow * (g/denom)).clip(0.0, 1.0)
+
+    base_imp = (b + 0.02 * d["road_den"]).clip(lower=0.0, upper=1.0)
+
+    imp = (base_imp * (1.0 - green_mitigate_coeff * g)).clip(lower=0.0, upper=1.0)
+
+    d["building_cov"] = b
+    d["green_cov"]    = g
+    d["impervious"]   = imp
     return d
 
 def uhi_delta(df, a1=6.0, a2=4.0, a3=1.0, water_adj=0.0):
