@@ -24,10 +24,10 @@ GOOGLE_CLOUD_PROJECT  = os.getenv("GOOGLE_CLOUD_PROJECT", "")
 GOOGLE_CLOUD_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 GEMINI_API_KEY        = os.getenv("GEMINI_API_KEY", "")
 
-if "GOOGLE_CREDENTIALS" in st.secrets:
-    with open("vertex-key.json", "w") as f:
-        f.write(st.secrets["GOOGLE_CREDENTIALS"])
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "vertex-key.json"
+creds = dict(st.secrets["google_service_account"])
+with open("vertex-key.json", "w") as f:
+    json.dump(creds, f)
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "vertex-key.json"
 
 if USE_VERTEX:
     from vertexai import init as vertex_init
