@@ -1,4 +1,6 @@
 import streamlit as st
+import os
+import json
 import folium
 from streamlit_folium import st_folium
 import pandas as pd
@@ -15,15 +17,17 @@ load_dotenv()
 st.set_page_config(page_title="UrbanTwin AI", layout="wide")
 st.title("UrbanTwin AI — Generative City Simulation")
 
-
-import json
-import os
 import textwrap
 
 USE_VERTEX = os.getenv("USE_VERTEX", "1") == "1"
 GOOGLE_CLOUD_PROJECT  = os.getenv("GOOGLE_CLOUD_PROJECT", "")
 GOOGLE_CLOUD_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 GEMINI_API_KEY        = os.getenv("GEMINI_API_KEY", "")
+
+if "GOOGLE_CREDENTIALS" in st.secrets:
+    with open("vertex-key.json", "w") as f:
+        f.write(st.secrets["GOOGLE_CREDENTIALS"])
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "vertex-key.json"
 
 if USE_VERTEX:
     from vertexai import init as vertex_init
