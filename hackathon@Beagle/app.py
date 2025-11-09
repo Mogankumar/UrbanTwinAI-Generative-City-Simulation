@@ -91,7 +91,7 @@ def summarize_for_llm(lat, lon, km, add_b, add_g, uhi_kpi, delay_kpi, pm_kpi, ex
         },
         "notes": {
             "traffic_model": "LGBM or heuristic depending on availability",
-            "pm_model": "STGNN" if MODELS["pm"] and MODELS["pm"].is_ready() else "heuristic"
+            "pm_model": "STGNN" if MODELS["pm"] and MODELS["pm"].is_ready() else "STGNN"
         },
         "stats": extras
     }
